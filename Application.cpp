@@ -3,18 +3,47 @@
 #include <iostream>
 
 Application::Application(int windowWidth, int windowHeight, const char* windowTitle)
-    : m_WindowWidth(windowWidth), m_WindowHeight(windowHeight) {
+    : m_WindowWidth(windowWidth), m_WindowHeight(windowHeight), isPaused(false), escapeKeyPressed(false) {
     InitializeGLFW();
+
+    // Get the primary monitor's video mode
+    GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
+
+    // Calculate desired window dimensions as a percentage of screen dimensions
+    m_WindowWidth = static_cast<int>(mode->width * 0.6);
+    m_WindowHeight = static_cast<int>(mode->height * 0.6);
+
+    // Calculate the position to center the window on the screen
+    int windowPosX = (mode->width - m_WindowWidth) / 2;
+    int windowPosY = (mode->height - m_WindowHeight) / 2;
+
+    // Create the window
     m_Window = glfwCreateWindow(m_WindowWidth, m_WindowHeight, windowTitle, NULL, NULL);
     if (!m_Window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         exit(-1);
     }
+
+    // Set the window position
+    glfwSetWindowPos(m_Window, windowPosX, windowPosY);
+
     glfwMakeContextCurrent(m_Window);
     InitializeGLEW();
     m_Shader = new Shader("./basic_vertex_shader.glsl", "./basic_fragment_shader.glsl");
     m_Camera = new Camera(glm::vec3(0.0f, 1.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 5.0f, 0.5f);
+
+    // Set the mouse callback and disable the cursor
+    glfwSetCursorPosCallback(m_Window, Camera::MouseControlCallback);
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    // Set the window resize callback
+    glfwSetFramebufferSizeCallback(m_Window, Application::FramebufferSizeCallback);
+    glfwSetWindowUserPointer(m_Window, this);
+
+    // Set the window's user pointer to the camera instance
+    glfwSetWindowUserPointer(m_Window, m_Camera);
 }
 
 Application::~Application() {
@@ -26,6 +55,16 @@ Application::~Application() {
 
 void Application::Run() {
     while (!glfwWindowShouldClose(m_Window)) {
+
+        if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS && !escapeKeyPressed) {
+            isPaused = !isPaused; // Toggle pause state
+            glfwSetInputMode(m_Window, GLFW_CURSOR, isPaused ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            escapeKeyPressed = true;
+        }
+        else if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_RELEASE) {
+            escapeKeyPressed = false;
+        }
+
         // Compute the delta time for smooth movements
         static double lastTime = glfwGetTime();
         double currentTime = glfwGetTime();
@@ -34,6 +73,7 @@ void Application::Run() {
 
         // Handle camera inputs
         m_Camera->KeyControl(m_Window, deltaTime);
+        
 
         // Clear the screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -68,28 +108,51 @@ void Application::Run() {
 }
 
 void Application::RenderSlope(const glm::vec3& objectColor) {
-    // Define the vertices for the slope
+    // Define the vertices for the 3D slope
     float slopeVertices[] = {
-        // Positions
-        0.0f,  0.0f,  0.0f, // Bottom-left vertex
-        2.0f,  0.0f,  0.0f, // Bottom-right vertex
-        1.0f,  2.0f,  0.0f  // Top vertex
+        // Base
+        0.0f, 0.0f, 0.0f,
+        2.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 2.0f,
+
+        // Sloped side
+        0.0f, 0.0f, 0.0f,
+        2.0f, 0.0f, 0.0f,
+        1.0f, 2.0f, 1.0f,
+
+        // Left side
+        0.0f, 0.0f, 0.0f,
+        1.0f, 2.0f, 1.0f,
+        1.0f, 0.0f, 2.0f,
+
+        // Right side
+        2.0f, 0.0f, 0.0f,
+        1.0f, 2.0f, 1.0f,
+        1.0f, 0.0f, 2.0f
     };
 
-    GLuint VBO, VAO;
+    unsigned int slopeIndices[] = {
+        0, 1, 2,  // Base
+        3, 4, 5,  // Sloped side
+        6, 7, 8,  // Left side
+        9, 10, 11 // Right side
+    };
+
+    GLuint VBO, VAO, EBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &EBO);
 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(slopeVertices), slopeVertices, GL_STATIC_DRAW);
 
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(slopeIndices), slopeIndices, GL_STATIC_DRAW);
+
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
     glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
 
     // Render slope
     m_Shader->Use();
@@ -103,13 +166,13 @@ void Application::RenderSlope(const glm::vec3& objectColor) {
     glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetProgramID(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
     glBindVertexArray(VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawElements(GL_TRIANGLES, sizeof(slopeIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 
+    glDeleteBuffers(1, &EBO);
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
 }
-
 
 void Application::RenderBaseplate(const glm::vec3& objectColor) {
     float vertices[] = {
@@ -168,6 +231,9 @@ void Application::RenderBaseplate(const glm::vec3& objectColor) {
 
 void Application::FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
+    Application* app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+    app->m_WindowWidth = width;
+    app->m_WindowHeight = height;
 }
 
 void Application::InitializeGLFW() {

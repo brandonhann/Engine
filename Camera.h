@@ -11,6 +11,8 @@ public:
     void KeyControl(GLFWwindow* window, float deltaTime);
     void SetBoundingBox(float height, float width);
     bool isCollidingWithBaseplate();
+    bool isCollidingWithSlope();
+    bool isSlopeWalkable();
     void Jump();
 
     glm::mat4 CalculateViewMatrix();
@@ -18,6 +20,9 @@ public:
     glm::vec3 GetCameraPosition() const { return position; }
     glm::vec3 GetCameraDirection() const { return glm::normalize(front); }
     glm::vec3 GetPosition() const;
+
+    // Static methods and members for mouse control
+    static void MouseControlCallback(GLFWwindow* window, double xPos, double yPos);
 
 private:
     glm::vec3 position;
@@ -40,4 +45,9 @@ private:
     bool isGrounded;
 
     void Update();
+
+    // Static members for mouse control
+    static double lastMouseX;
+    static double lastMouseY;
+    static bool firstMouse;
 };

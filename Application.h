@@ -10,6 +10,7 @@ public:
     Application(int windowWidth, int windowHeight, const char* windowTitle);
     ~Application();
 
+    bool IsPaused() const { return isPaused; }
     void Run(); // Main loop
     void RenderBaseplate(const glm::vec3& objectColor);
     void RenderSlope(const glm::vec3& objectColor);
@@ -18,6 +19,8 @@ private:
     GLFWwindow* m_Window;
     int m_WindowWidth;
     int m_WindowHeight;
+    bool isPaused;
+    bool escapeKeyPressed;
     Shader* m_Shader;
     Camera* m_Camera;
 
