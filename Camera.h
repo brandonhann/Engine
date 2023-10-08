@@ -11,8 +11,6 @@ public:
     void KeyControl(GLFWwindow* window, float deltaTime);
     void SetBoundingBox(float height, float width);
     bool isCollidingWithBaseplate();
-    bool isCollidingWithSlope();
-    bool isSlopeWalkable();
     void Jump();
 
     glm::mat4 CalculateViewMatrix();

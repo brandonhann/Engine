@@ -54,13 +54,6 @@ void Camera::KeyControl(GLFWwindow* window, float deltaTime) {
         isGrounded = false;
     }
 
-    // Check if colliding with the slope
-    if (isCollidingWithSlope()) {
-        // Calculate the height adjustment based on player's x position on the slope
-        float adjustedHeight = (position.x / 2.0f) + 0.5f; // For our slope
-        position.y = adjustedHeight;
-    }
-
     // Jumping logic
     if (isGrounded && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         Jump();
@@ -79,24 +72,6 @@ bool Camera::isCollidingWithBaseplate() {
     return (position.x >= baseplateMin.x && position.x <= baseplateMax.x) &&
         (position.y >= baseplateMin.y && position.y <= baseplateMax.y + 1.5f) && // Added the eyeHeight here for y-axis collision check
         (position.z >= baseplateMin.z && position.z <= baseplateMax.z);
-}
-
-bool Camera::isCollidingWithSlope() {
-    glm::vec3 slopeMin = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 slopeMax = glm::vec3(2.0f, 2.0f, 2.0f);
-
-    bool withinBase = (position.x >= slopeMin.x && position.x <= slopeMax.x) &&
-        (position.z >= slopeMin.z && position.z <= slopeMax.z);
-
-    // Check if player is above the slope's surface
-    bool aboveSlopeSurface = position.y <= position.x;
-
-    return withinBase && aboveSlopeSurface;
-}
-
-bool Camera::isSlopeWalkable() {
-    float inclineAngle = glm::degrees(atan2(2.0f, 1.0f)); // Height over half the base
-    return inclineAngle < 45.0f; // Assuming walkable incline is less than 45 degrees
 }
 
 void Camera::Jump() {

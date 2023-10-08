@@ -97,81 +97,9 @@ void Application::Run() {
         // Render the baseplate with blue color
         RenderBaseplate(glm::vec3(0.0f, 0.0f, 1.0f));
 
-
-        // Render the slope with blue color
-        RenderSlope(glm::vec3(0.0f, 1.0f, 0.0f));
-
-
         glfwSwapBuffers(m_Window);
         glfwPollEvents();
     }
-}
-
-void Application::RenderSlope(const glm::vec3& objectColor) {
-    // Define the vertices for the 3D slope
-    float slopeVertices[] = {
-        // Base
-        0.0f, 0.0f, 0.0f,
-        2.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 2.0f,
-
-        // Sloped side
-        0.0f, 0.0f, 0.0f,
-        2.0f, 0.0f, 0.0f,
-        1.0f, 2.0f, 1.0f,
-
-        // Left side
-        0.0f, 0.0f, 0.0f,
-        1.0f, 2.0f, 1.0f,
-        1.0f, 0.0f, 2.0f,
-
-        // Right side
-        2.0f, 0.0f, 0.0f,
-        1.0f, 2.0f, 1.0f,
-        1.0f, 0.0f, 2.0f
-    };
-
-    unsigned int slopeIndices[] = {
-        0, 1, 2,  // Base
-        3, 4, 5,  // Sloped side
-        6, 7, 8,  // Left side
-        9, 10, 11 // Right side
-    };
-
-    GLuint VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
-
-    glBindVertexArray(VAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(slopeVertices), slopeVertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(slopeIndices), slopeIndices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-
-    // Render slope
-    m_Shader->Use();
-
-    // Set object color
-    glUniform3fv(glGetUniformLocation(m_Shader->GetProgramID(), "objectColor"), 1, glm::value_ptr(objectColor));
-
-    glm::mat4 view = m_Camera->CalculateViewMatrix();
-    glm::mat4 projection = glm::perspective(45.0f, (float)m_WindowWidth / (float)m_WindowHeight, 0.1f, 100.0f);
-    glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetProgramID(), "view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetProgramID(), "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, sizeof(slopeIndices) / sizeof(unsigned int), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-
-    glDeleteBuffers(1, &EBO);
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
 }
 
 void Application::RenderBaseplate(const glm::vec3& objectColor) {

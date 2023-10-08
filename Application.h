@@ -13,7 +13,6 @@ public:
     bool IsPaused() const { return isPaused; }
     void Run(); // Main loop
     void RenderBaseplate(const glm::vec3& objectColor);
-    void RenderSlope(const glm::vec3& objectColor);
 
 private:
     GLFWwindow* m_Window;
